@@ -1,0 +1,55 @@
+﻿@page
+@model ECRS_EventManager.Pages.Registrations.DetailsModel
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+<h2>Details</h2>
+
+<div>
+    <h4>Registration</h4>
+    <hr />
+    <dl class="dl-horizontal">
+        <dt>
+            @Html.DisplayNameFor(model => model.Registration.FormEntryID)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Registration.FormEntryID)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Registration.FormAdminLink)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Registration.FormAdminLink)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Registration.FormEditLink)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Registration.FormEditLink)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Registration.CreatedOn)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Registration.CreatedOn)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Registration.SubmittedOn)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Registration.SubmittedOn)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Registration.UpdatedOn)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Registration.UpdatedOn)
+        </dd>
+    </dl>
+</div>
+<div>
+    <a asp-page="./Edit" asp-route-id="@Model.Registration.ID">Edit</a> |
+    <a asp-page="./Index">Back to List</a>
+</div>

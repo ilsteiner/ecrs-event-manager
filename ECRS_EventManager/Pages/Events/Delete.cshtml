@@ -1,0 +1,58 @@
+﻿@page
+@model ECRS_EventManager.Pages.Events.DeleteModel
+
+@{
+    ViewData["Title"] = "Delete";
+}
+
+<h2>Delete</h2>
+
+<h3>Are you sure you want to delete this?</h3>
+<div>
+    <h4>Event</h4>
+    <hr />
+    <dl class="dl-horizontal">
+        <dt>
+            @Html.DisplayNameFor(model => model.Event.CreatedOn)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Event.CreatedOn)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Event.UpdatedOn)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Event.UpdatedOn)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Event.EventName)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Event.EventName)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Event.FormID)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Event.FormID)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Event.FormInternalName)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Event.FormInternalName)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Event.FormName)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Event.FormName)
+        </dd>
+    </dl>
+    
+    <form method="post">
+        <input type="hidden" asp-for="Event.ID" />
+        <input type="submit" value="Delete" class="btn btn-default" /> |
+        <a asp-page="./Index">Back to List</a>
+    </form>
+</div>

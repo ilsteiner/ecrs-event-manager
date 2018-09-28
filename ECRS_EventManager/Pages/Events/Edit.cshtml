@@ -1,0 +1,60 @@
+﻿@page
+@model ECRS_EventManager.Pages.Events.EditModel
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h2>Edit</h2>
+
+<h4>Event</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Event.ID" />
+            <div class="form-group">
+                <label asp-for="Event.CreatedOn" class="control-label"></label>
+                <input asp-for="Event.CreatedOn" class="form-control" />
+                <span asp-validation-for="Event.CreatedOn" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Event.UpdatedOn" class="control-label"></label>
+                <input asp-for="Event.UpdatedOn" class="form-control" />
+                <span asp-validation-for="Event.UpdatedOn" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Event.EventName" class="control-label"></label>
+                <input asp-for="Event.EventName" class="form-control" />
+                <span asp-validation-for="Event.EventName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Event.FormID" class="control-label"></label>
+                <input asp-for="Event.FormID" class="form-control" />
+                <span asp-validation-for="Event.FormID" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Event.FormInternalName" class="control-label"></label>
+                <input asp-for="Event.FormInternalName" class="form-control" />
+                <span asp-validation-for="Event.FormInternalName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Event.FormName" class="control-label"></label>
+                <input asp-for="Event.FormName" class="form-control" />
+                <span asp-validation-for="Event.FormName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-default" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-page="./Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

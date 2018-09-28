@@ -1,0 +1,85 @@
+﻿@page
+@model ECRS_EventManager.Pages.People.DetailsModel
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+<h2>Details</h2>
+
+<div>
+    <h4>Person</h4>
+    <hr />
+    <dl class="dl-horizontal">
+        <dt>
+            @Html.DisplayNameFor(model => model.Person.CreatedOn)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Person.CreatedOn)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Person.UpdatedOn)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Person.UpdatedOn)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Person.FirstName)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Person.FirstName)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Person.LastName)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Person.LastName)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Person.MiddleName)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Person.MiddleName)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Person.MiddleInitial)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Person.MiddleInitial)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Person.NamePrefix)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Person.NamePrefix)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Person.NameSuffix)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Person.NameSuffix)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Person.Phone)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Person.Phone)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Person.Gender)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Person.Gender)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Person.Email)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Person.Email)
+        </dd>
+    </dl>
+</div>
+<div>
+    <a asp-page="./Edit" asp-route-id="@Model.Person.ID">Edit</a> |
+    <a asp-page="./Index">Back to List</a>
+</div>

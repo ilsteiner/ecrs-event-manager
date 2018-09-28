@@ -1,0 +1,88 @@
+﻿@page
+@model ECRS_EventManager.Pages.People.DeleteModel
+
+@{
+    ViewData["Title"] = "Delete";
+}
+
+<h2>Delete</h2>
+
+<h3>Are you sure you want to delete this?</h3>
+<div>
+    <h4>Person</h4>
+    <hr />
+    <dl class="dl-horizontal">
+        <dt>
+            @Html.DisplayNameFor(model => model.Person.CreatedOn)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Person.CreatedOn)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Person.UpdatedOn)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Person.UpdatedOn)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Person.FirstName)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Person.FirstName)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Person.LastName)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Person.LastName)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Person.MiddleName)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Person.MiddleName)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Person.MiddleInitial)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Person.MiddleInitial)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Person.NamePrefix)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Person.NamePrefix)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Person.NameSuffix)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Person.NameSuffix)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Person.Phone)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Person.Phone)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Person.Gender)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Person.Gender)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Person.Email)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Person.Email)
+        </dd>
+    </dl>
+    
+    <form method="post">
+        <input type="hidden" asp-for="Person.ID" />
+        <input type="submit" value="Delete" class="btn btn-default" /> |
+        <a asp-page="./Index">Back to List</a>
+    </form>
+</div>
