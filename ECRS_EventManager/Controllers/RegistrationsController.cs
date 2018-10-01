@@ -141,21 +141,7 @@ namespace ECRS_EventManager.Controllers
                     foreach (var attendee in json["Attendees"])
                     {
                         // Look up person in DB or get them from the JSON
-                        Person person;
-                        if (_context.Person.Count() > 0)
-                        {
-                            person = await _context.Person.Where(m =>
-                                        (attendee["Email"] != null && m.Email == attendee["Email"].Value<string>()) ||
-                                        (m.FirstName == attendee["Name"]["First"].Value<string>() &&
-                                        m.LastName == attendee["Name"]["Last"].Value<string>())
-                                )
-                                .DefaultIfEmpty(DeserializeAttendee(attendee))
-                                .SingleOrDefaultAsync();
-                        }
-                        else
-                        {
-                            person = DeserializeAttendee(attendee);
-                        }
+                        Person person = await DeserializeAttendee(attendee);
 
                         RegistrationEntry entry = new RegistrationEntry()
                         {
@@ -247,37 +233,75 @@ namespace ECRS_EventManager.Controllers
 
         async private Task<Person> DeserializePayor(JObject json)
         {
+            bool isNew = false;
+
             Address billingAddress = await DeserializeBillingAddress(json);
 
-            Person newPerson = new Person()
-            {
-                ID = Guid.NewGuid(),
-                CreatedOn = DateTime.Now,
-                UpdatedOn = DateTime.Now,
-                Email = json["Email"] == null ? "" : json["Email"].Value<string>(),
+            Person thePerson = await _context.Person.Where(m =>
+                                (json["Email"] != null && m.Email == json["Email"].Value<string>()) ||
+                                    ((json["MainContactName"]["First"] != null && json["MainContactName"]["Last"] != null) &&
+                                    (m.FirstName == json["MainContactName"]["First"].Value<string>() &&
+                                    m.LastName == json["MainContactName"]["Last"].Value<string>()))
+                            )
+                            .SingleOrDefaultAsync();
 
-                // Get the related address or create a new one if needed
-                Addresses = new List<Address>() { billingAddress }
-            };
+            // Create a new person
+            if(thePerson == null)
+            {
+                isNew = true;
+
+                thePerson = new Person()
+                {
+                    ID = Guid.NewGuid(),
+                    CreatedOn = DateTime.Now
+                };
+            }
+
+            // The following code works regardless of if it's a new person or an updated existing one
+
+            thePerson.UpdatedOn = DateTime.Now;
+
+            // If there's a new email that isn't an empty string use that, otherwise use existing email
+            // Existing email might be null or empty, but whatever
+            thePerson.Email = json["Email"] == null || json["Email"].Value<string>() == String.Empty
+                ? thePerson.Email : json["Email"].Value<string>();
+
+            // Only add the address if the person doesn't have any and/or doesn't have this one
+            if(thePerson.Addresses == null)
+            {
+                thePerson.Addresses = new List<Address>() { billingAddress };
+            }
+            else if (!thePerson.Addresses.Contains(billingAddress))
+            {
+                thePerson.Addresses.Add(billingAddress);
+            }
 
             //Populate the phone number, use the first attendee if needed
             if(json["Phone"] != null && json["Phone"].Value<string>() != String.Empty)
             {
-                newPerson.Phone = json["Phone"].Value<string>();
+                thePerson.Phone = json["Phone"].Value<string>();
             }
             else if(json["Attendees"][0]["Phone"] != null && json["Attendees"][0]["Phone"].Value<string>() != String.Empty)
             {
-                newPerson.Phone = json["Attendees"][0]["Phone"].Value<string>();
+                thePerson.Phone = json["Attendees"][0]["Phone"].Value<string>();
             }
 
             // Populate the name
             // Use the billing name if present, otherwise use the first attendee
-            PopulateName(ref newPerson, 
+            PopulateName(ref thePerson, 
                 json["MainContactName"], 
                 new List<JToken>() { json["Attendees"][0]["Name"] });
 
-            _context.Add(newPerson);
-            return newPerson;
+            if (isNew)
+            {
+                _context.Add(thePerson);
+            }
+            else
+            {
+                _context.Update(thePerson);
+            }
+
+            return thePerson;
         }
 
         async private Task<Address> DeserializeBillingAddress(JObject json)
@@ -349,30 +373,46 @@ namespace ECRS_EventManager.Controllers
             return billingAddress;
         }
 
-        private Person DeserializeAttendee(JToken attendee, Address address = null)
+        async private Task<Person> DeserializeAttendee(JToken attendee, Address address = null)
         {
-            Person person = new Person()
+            Person thePerson = await _context.Person.Where(m =>
+                                (attendee["Email"] != null && m.Email == attendee["Email"].Value<string>()) ||
+                                    ((attendee["Name"]["First"] != null && attendee["Name"]["Last"] != null) &&
+                                    (m.FirstName == attendee["Name"]["First"].Value<string>() &&
+                                    m.LastName == attendee["Name"]["Last"].Value<string>()))
+                            )
+                            .SingleOrDefaultAsync();
+
+            if(thePerson == null)
             {
-                ID = Guid.NewGuid(),
-                CreatedOn = DateTime.Now,
-                UpdatedOn = DateTime.Now,
-                Phone = attendee["Phone"] == null ? "" : attendee["Phone"].Value<string>(),
-                Gender = attendee["Gender"] == null ? "" : attendee["Gender"].Value<string>(),
-                Email = attendee["Email"] == null ? "" : attendee["Email"].Value<string>()
-            };
+                thePerson = new Person()
+                {
+                    ID = Guid.NewGuid(),
+                    CreatedOn = DateTime.Now,
+                    Addresses = new List<Address>()
+                };
+            }
+
+            thePerson.UpdatedOn = DateTime.Now;
+            thePerson.Phone = attendee["Phone"] == null && attendee["Phone"].Value<string>() != String.Empty 
+                                ? thePerson.Phone : attendee["Phone"].Value<string>();
+            thePerson.Gender = attendee["Gender"] == null && attendee["Gender"].Value<string>() != String.Empty
+                                ? thePerson.Gender : attendee["Gender"].Value<string>();
+            thePerson.Email = attendee["Email"] == null && attendee["Email"].Value<string>() != String.Empty
+                                ? thePerson.Email : attendee["Email"].Value<string>();
 
             if(address != null)
             {
                 // If this person doesn't have this address yet
-                if(!person.Addresses.Contains(address))
+                if(!thePerson.Addresses.Contains(address))
                 {
-                    person.Addresses.Add(address);
+                    thePerson.Addresses.Add(address);
                 }                
             }
 
-            PopulateName(ref person, attendee["Name"]);
+            PopulateName(ref thePerson, attendee["Name"]);
 
-            return person;
+            return thePerson;
         }
 
         private void PopulateName(ref Person person, JToken name, List<JToken> secondaryName = null)
