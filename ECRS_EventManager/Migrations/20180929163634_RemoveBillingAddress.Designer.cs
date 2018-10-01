@@ -11,9 +11,10 @@ using System;
 namespace ECRS_EventManager.Migrations
 {
     [DbContext(typeof(ECRS_EventManagerContext))]
-    partial class ECRS_EventManagerContextModelSnapshot : ModelSnapshot
+    [Migration("20180929163634_RemoveBillingAddress")]
+    partial class RemoveBillingAddress
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

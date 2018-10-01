@@ -11,9 +11,10 @@ using System;
 namespace ECRS_EventManager.Migrations
 {
     [DbContext(typeof(ECRS_EventManagerContext))]
-    partial class ECRS_EventManagerContextModelSnapshot : ModelSnapshot
+    [Migration("20180929015929_AddConstraints")]
+    partial class AddConstraints
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -86,6 +87,8 @@ namespace ECRS_EventManager.Migrations
                     b.Property<Guid>("ID")
                         .ValueGeneratedOnAdd();
 
+                    b.Property<Guid>("BillingAddressID");
+
                     b.Property<DateTime>("CreatedOn");
 
                     b.Property<string>("Email");
@@ -117,6 +120,8 @@ namespace ECRS_EventManager.Migrations
                     b.Property<DateTime>("UpdatedOn");
 
                     b.HasKey("ID");
+
+                    b.HasIndex("BillingAddressID");
 
                     b.ToTable("Person");
                 });
@@ -183,6 +188,14 @@ namespace ECRS_EventManager.Migrations
                     b.HasOne("EventManager.Models.Person")
                         .WithMany("Addresses")
                         .HasForeignKey("PersonID");
+                });
+
+            modelBuilder.Entity("EventManager.Models.Person", b =>
+                {
+                    b.HasOne("EventManager.Models.Address", "BillingAddress")
+                        .WithMany()
+                        .HasForeignKey("BillingAddressID")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("EventManager.Models.Registration", b =>

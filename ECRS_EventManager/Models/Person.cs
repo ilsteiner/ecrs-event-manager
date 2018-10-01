@@ -17,31 +17,32 @@ namespace EventManager.Models
         public DateTime UpdatedOn { get; set; }
 
         [Required]
-        [StringLength(255)]
+        [StringLength(255, ErrorMessage = "{0} can have a max of {1} characters")]
         public string FirstName { get; set; }
 
         [Required]
-        [StringLength(255)]
+        [StringLength(255, ErrorMessage = "{0} can have a max of {1} characters")]
         public string LastName { get; set; }
 
-        [StringLength(255)]
+        [StringLength(255, ErrorMessage = "{0} can have a max of {1} characters")]
         public string MiddleName { get; set; }
 
-        [StringLength(2)]
+        [StringLength(2, ErrorMessage = "{0} can have a max of {1} characters")]
         public string MiddleInitial { get; set; }
 
-        [StringLength(31)]
+        [StringLength(31, ErrorMessage = "{0} can have a max of {1} characters")]
         public string NamePrefix { get; set; }
 
-        [StringLength(31)]
+        [StringLength(31, ErrorMessage = "{0} can have a max of {1} characters")]
         public string NameSuffix { get; set; }
 
+        [Phone]
         public string Phone { get; set; }
-        public string Gender { get; set; }
-        public string Email { get; set; }
 
-        [Required]
-        public Address BillingAddress { get; set; }
+        public string Gender { get; set; }
+
+        [EmailAddress]
+        public string Email { get; set; }
 
         [Required]
         public List<Address> Addresses { get; set; }

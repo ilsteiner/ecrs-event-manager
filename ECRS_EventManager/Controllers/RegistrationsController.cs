@@ -106,31 +106,75 @@ namespace ECRS_EventManager.Controllers
 
             try
             {
-                registration.ID = new Guid();
+                registration.ID = Guid.NewGuid();
 
                 // Get the related event model or create a new one if needed
-                var relatedEvent = await _context.Event.Where(m => m.FormID == json["Form"]["Id"].Value<string>())
-                                        .DefaultIfEmpty(DeserializeEvent(json))
-                                        .SingleAsync();
+                registration.Event = DeserializeEvent(json);
 
                 // Get the related person (the payor) or create a new one if needed
-                var relatedPerson = await _context.Person.Where(m =>
-                                m.Email == json["Entry"]["Order"]["EmailAddress"].Value<string>() ||
-                                    (m.FirstName == json["Entry"]["Order"]["BillingName"]["First"].Value<string>() &&
-                                    m.LastName == json["Entry"]["Order"]["BillingName"]["Last"].Value<string>())
-                            ).SingleAsync();
+                registration.Payor = await _context.Person.Where(m =>
+                                (json["Email"] != null && m.Email == json["Email"].Value<string>()) ||
+                                    ((json["MainContactName"]["First"] != null && json["MainContactName"]["Last"] != null) &&
+                                    (m.FirstName == json["MainContactName"]["First"].Value<string>() &&
+                                    m.LastName == json["MainContactName"]["Last"].Value<string>()))
+                            )
+                            .DefaultIfEmpty(await DeserializePayor(json))
+                            .SingleOrDefaultAsync();
 
-                registration.FormEntryID = json["Entry"]["Number"].FirstOrDefault().Value<string>();
-                registration.FormAdminLink = json["Entry"]["AdminLink"].FirstOrDefault().Value<string>();
-                registration.FormEditLink = json["Entry"]["EditLink"].FirstOrDefault().Value<string>();
-                registration.CreatedOn = json["Entry"]["DateCreated"].FirstOrDefault().Value<DateTime>();
-                registration.SubmittedOn = json["Entry"]["DateSubmitted"].FirstOrDefault().Value<DateTime>();
-                registration.UpdatedOn = json["Entry"]["DateUpdated"].FirstOrDefault().Value<DateTime>();
-                registration.Payor = await DeserializePayor(json);
+                // Default to empty string or current time on missing property
+                registration.FormEntryID = json["Entry"]["Number"] == null ? String.Empty
+                                            : json["Entry"]["Number"].Value<string>();
+                registration.FormAdminLink = json["Entry"]["AdminLink"] == null ? String.Empty
+                                            : json["Entry"]["AdminLink"].Value<string>();
+                registration.FormEditLink = json["Entry"]["EditLink"] == null ? String.Empty
+                                            : json["Entry"]["EditLink"].Value<string>();
+                registration.CreatedOn = json["Entry"]["DateCreated"] == null ? DateTime.Now
+                                            : json["Entry"]["DateCreated"].Value<DateTime>();
+                registration.SubmittedOn = json["Entry"]["DateSubmitted"] == null ? DateTime.Now 
+                                            : json["Entry"]["DateSubmitted"].Value<DateTime>();
+                registration.UpdatedOn = json["Entry"]["DateUpdated"] == null ? DateTime.Now
+                                            : json["Entry"]["DateUpdated"].Value<DateTime>();
 
-                foreach (var attendee in json["Attendees"])
+                // Lookup each person or create them if needed
+                if(json["Attendees"] != null && json["Attendees"].Count() > 0)
                 {
-                    // Lookup each person or create them if needed
+                    foreach (var attendee in json["Attendees"])
+                    {
+                        // Look up person in DB or get them from the JSON
+                        Person person;
+                        if (_context.Person.Count() > 0)
+                        {
+                            person = await _context.Person.Where(m =>
+                                        (attendee["Email"] != null && m.Email == attendee["Email"].Value<string>()) ||
+                                        (m.FirstName == attendee["Name"]["First"].Value<string>() &&
+                                        m.LastName == attendee["Name"]["Last"].Value<string>())
+                                )
+                                .DefaultIfEmpty(DeserializeAttendee(attendee))
+                                .SingleOrDefaultAsync();
+                        }
+                        else
+                        {
+                            person = DeserializeAttendee(attendee);
+                        }
+
+                        RegistrationEntry entry = new RegistrationEntry()
+                        {
+                            ID = Guid.NewGuid(),
+                            CreatedOn = json["Entry"]["DateCreated"].Value<DateTime>(),
+                            SubmittedOn = json["Entry"]["DateSubmitted"].Value<DateTime>(),
+                            UpdatedOn = json["Entry"]["DateUpdated"].Value<DateTime>(),
+                            Person = person
+                        };
+
+                        if (registration.Entries == null)
+                        {
+                            registration.Entries = new List<RegistrationEntry>() { entry };
+                        }
+                        else
+                        {
+                            registration.Entries.Add(entry);
+                        }
+                    }
                 }
 
                 _context.Registration.Add(registration);
@@ -171,84 +215,197 @@ namespace ECRS_EventManager.Controllers
             return _context.Registration.Any(e => e.ID == id);
         }
 
-        public Event DeserializeEvent(in JObject json)
+        private Event DeserializeEvent(in JObject json)
         {
-            Event newEvent = new Event()
+            string FormID = json["Form"]["Id"].Value<string>();
+            Event theEvent = _context.Event.Where(m => m.FormID == FormID).SingleOrDefault();
+
+            if (theEvent != null)
             {
-                ID = new Guid(),
-                CreatedOn = DateTime.Now,
-                UpdatedOn = DateTime.Now,
-                EventName = json["Form"]["Name"].Value<string>(),
-                FormID = json["Form"]["Id"].Value<string>(),
-                FormName = json["Form"]["Name"].Value<string>(),
-                FormInternalName = json["Form"]["InternalName"].Value<string>()
-            };
+                _context.Attach(theEvent);
 
-            _context.Add(newEvent);
+                return theEvent;
+            }
+            else
+            {
+                theEvent = new Event()
+                {
+                    ID = Guid.NewGuid(),
+                    CreatedOn = DateTime.Now,
+                    UpdatedOn = DateTime.Now,
+                    EventName = json["Form"]["Name"].Value<string>(),
+                    FormID = json["Form"]["Id"].Value<string>(),
+                    FormName = json["Form"]["Name"].Value<string>(),
+                    FormInternalName = json["Form"]["InternalName"].Value<string>()
+                };
 
-            return newEvent;
+                _context.Add(theEvent);
+
+                return theEvent;
+            }
         }
 
-        async public Task<Person> DeserializePayor(JObject json)
+        async private Task<Person> DeserializePayor(JObject json)
         {
-            Address billingAddress = await _context.Address.Where(m =>
-                        m.Line1 == json["Entry"]["Order"]["BillingAddress"]["Line1"].Value<string>() &&
-                        m.City == json["Entry"]["Order"]["BillingAddress"]["City"].Value<string>() &&
-                        m.State == json["Entry"]["Order"]["BillingAddress"]["State"].Value<string>())
-                        .DefaultIfEmpty(new Address()
-                        {
-                            ID = new Guid(),
-                            CreatedOn = DateTime.Now,
-                            UpdatedOn = DateTime.Now,
-                            City = json["Entry"]["Order"]["BillingAddress"]["City"].Value<string>(),
-                            Line1 = json["Entry"]["Order"]["BillingAddress"]["Line1"].Value<string>(),
-                            Line2 = json["Entry"]["Order"]["BillingAddress"]["Line2"].Value<string>(),
-                            Line3 = json["Entry"]["Order"]["BillingAddress"]["Line3"].Value<string>(),
-                            Country = json["Entry"]["Order"]["BillingAddress"]["Country"].Value<string>(),
-                            State = json["Entry"]["Order"]["BillingAddress"]["State"].Value<string>(),
-                            PostalCode = json["Entry"]["Order"]["BillingAddress"]["PostalCode"].Value<string>(),
-                            Type = json["Entry"]["Order"]["BillingAddress"]["Type"].Value<string>(),
-                            IsPrimary = true
-                        })
-                        .SingleAsync();                        
-                        
+            Address billingAddress = await DeserializeBillingAddress(json);
+
             Person newPerson = new Person()
             {
-                ID = new Guid(),
+                ID = Guid.NewGuid(),
                 CreatedOn = DateTime.Now,
                 UpdatedOn = DateTime.Now,
-                // Use the billing name if present, otherwise use the first attendee
-                FirstName = json["Entry"]["Order"]["BillingName"]["First"]
-                    .DefaultIfEmpty(json["Attendees"][0]["Name"]["First"])
-                    .Value<string>(),
-                LastName = json["Entry"]["Order"]["BillingName"]["Last"]
-                    .DefaultIfEmpty(json["Attendees"][0]["Name"]["Last"])
-                    .Value<string>(),
-                MiddleName = json["Entry"]["Order"]["BillingName"]["Middle"]
-                    .DefaultIfEmpty(json["Attendees"][0]["Name"]["Middle"])
-                    .Value<string>(),
-                MiddleInitial = json["Entry"]["Order"]["BillingName"]["MiddleInitial"]
-                    .DefaultIfEmpty(json["Attendees"][0]["Name"]["MiddleInitial"])
-                    .Value<string>(),
-                NamePrefix = json["Entry"]["Order"]["BillingName"]["Prefix"]
-                    .DefaultIfEmpty(json["Attendees"][0]["Name"]["Prefix"])
-                    .Value<string>(),
-                NameSuffix = json["Entry"]["Order"]["BillingName"]["Suffix"]
-                    .DefaultIfEmpty(json["Attendees"][0]["Name"]["Suffix"])
-                    .Value<string>(),
-                Phone = json["Entry"]["Order"]["PhoneNumber"]
-                    .DefaultIfEmpty(json["Attendees"][0]["Phone"])
-                    .Value<string>(),
-                Email = json["Entry"]["Order"]["EmailAddress"]
-                    .Value<string>(),
+                Email = json["Email"] == null ? "" : json["Email"].Value<string>(),
 
                 // Get the related address or create a new one if needed
-                BillingAddress = billingAddress,
                 Addresses = new List<Address>() { billingAddress }
             };
 
+            //Populate the phone number, use the first attendee if needed
+            if(json["Phone"] != null && json["Phone"].Value<string>() != String.Empty)
+            {
+                newPerson.Phone = json["Phone"].Value<string>();
+            }
+            else if(json["Attendees"][0]["Phone"] != null && json["Attendees"][0]["Phone"].Value<string>() != String.Empty)
+            {
+                newPerson.Phone = json["Attendees"][0]["Phone"].Value<string>();
+            }
+
+            // Populate the name
+            // Use the billing name if present, otherwise use the first attendee
+            PopulateName(ref newPerson, 
+                json["MainContactName"], 
+                new List<JToken>() { json["Attendees"][0]["Name"] });
+
             _context.Add(newPerson);
             return newPerson;
+        }
+
+        async private Task<Address> DeserializeBillingAddress(JObject json)
+        {
+            Address billingAddress;
+
+            // Default missing fields to empty strings
+            if (_context.Address.Count() != 0)
+            {
+                billingAddress = await _context.Address.Where(m =>
+                        json["Address"]["Line1"] != null &&
+                        json["Address"]["City"] != null &&
+                        json["Address"]["State"] != null &&
+                        m.Line1 == json["Address"]["Line1"].Value<string>() &&
+                        m.City == json["Address"]["City"].Value<string>() &&
+                        m.State == json["Address"]["State"].Value<string>())
+                        .DefaultIfEmpty(new Address()
+                        {
+                            ID = Guid.NewGuid(),
+                            CreatedOn = DateTime.Now,
+                            UpdatedOn = DateTime.Now,
+                            City = json["Address"]["City"] == null ? String.Empty 
+                                    : json["Address"]["City"].Value<string>(),
+                            Line1 = json["Address"]["Line1"] == null ? String.Empty
+                                    : json["Address"]["Line1"].Value<string>(),
+                            Line2 = json["Address"]["Line2"] == null ? String.Empty
+                                    : json["Address"]["Line2"].Value<string>(),
+                            Line3 = json["Address"]["Line3"] == null ? String.Empty
+                                    : json["Address"]["Line3"].Value<string>(),
+                            Country = json["Address"]["Country"] == null ? String.Empty 
+                                    : json["Address"]["Country"].Value<string>(),
+                            State = json["Address"]["State"] == null ? String.Empty
+                                    : json["Address"]["State"].Value<string>(),
+                            PostalCode = json["Address"]["PostalCode"] == null ? String.Empty
+                                    : json["Address"]["PostalCode"].Value<string>(),
+                            Type = json["Address"]["Type"] == null ? String.Empty
+                                    : json["Address"]["Type"].Value<string>(),
+                            IsPrimary = true
+                        })
+                        .SingleAsync();
+            }
+            else
+            {
+                billingAddress = new Address()
+                {
+                    ID = Guid.NewGuid(),
+                    CreatedOn = DateTime.Now,
+                    UpdatedOn = DateTime.Now,
+                    City = json["Address"]["City"] == null ? String.Empty
+                                    : json["Address"]["City"].Value<string>(),
+                    Line1 = json["Address"]["Line1"] == null ? String.Empty
+                                    : json["Address"]["Line1"].Value<string>(),
+                    Line2 = json["Address"]["Line2"] == null ? String.Empty
+                                    : json["Address"]["Line2"].Value<string>(),
+                    Line3 = json["Address"]["Line3"] == null ? String.Empty
+                                    : json["Address"]["Line3"].Value<string>(),
+                    Country = json["Address"]["Country"] == null ? String.Empty
+                                    : json["Address"]["Country"].Value<string>(),
+                    State = json["Address"]["State"] == null ? String.Empty
+                                    : json["Address"]["State"].Value<string>(),
+                    PostalCode = json["Address"]["PostalCode"] == null ? String.Empty
+                                    : json["Address"]["PostalCode"].Value<string>(),
+                    Type = json["Address"]["Type"] == null ? String.Empty
+                                    : json["Address"]["Type"].Value<string>(),
+                    IsPrimary = true
+                };
+            }
+
+            return billingAddress;
+        }
+
+        private Person DeserializeAttendee(JToken attendee, Address address = null)
+        {
+            Person person = new Person()
+            {
+                ID = Guid.NewGuid(),
+                CreatedOn = DateTime.Now,
+                UpdatedOn = DateTime.Now,
+                Phone = attendee["Phone"] == null ? "" : attendee["Phone"].Value<string>(),
+                Gender = attendee["Gender"] == null ? "" : attendee["Gender"].Value<string>(),
+                Email = attendee["Email"] == null ? "" : attendee["Email"].Value<string>()
+            };
+
+            if(address != null)
+            {
+                // If this person doesn't have this address yet
+                if(!person.Addresses.Contains(address))
+                {
+                    person.Addresses.Add(address);
+                }                
+            }
+
+            PopulateName(ref person, attendee["Name"]);
+
+            return person;
+        }
+
+        private void PopulateName(ref Person person, JToken name, List<JToken> secondaryName = null)
+        {
+            // Use existing value if looked up value is null
+            // We never overwrite an existing value with a null or empty value
+            person.FirstName = name["First"] == null || name["First"].Value<string>() == String.Empty
+                                ? person.FirstName
+                                : name["First"].Value<string>();
+            person.LastName = name["Last"] == null || name["Last"].Value<string>() == String.Empty
+                                ? person.LastName
+                                : name["Last"].Value<string>();
+            person.MiddleName = name["Middle"] == null || name["Middle"].Value<string>() == String.Empty
+                                ? person.MiddleName
+                                : name["Middle"].Value<string>();
+            person.MiddleInitial = name["MiddleInitial"] == null || name["MiddleInitial"].Value<string>() == String.Empty
+                                ? person.MiddleInitial
+                                : name["MiddleInitial"].Value<string>();
+            person.NamePrefix = name["NamePrefix"] == null || name["NamePrefix"].Value<string>() == String.Empty
+                                ? person.NamePrefix
+                                : name["NamePrefix"].Value<string>();
+            person.NameSuffix = name["NameSuffix"] == null || name["NameSuffix"].Value<string>() == String.Empty
+                                ? person.NameSuffix
+                                : name["NameSuffix"].Value<string>();
+
+            // If we have a list of alternate names, try those too
+            if (secondaryName != null && secondaryName.Count > 0)
+            {
+                // Call this method again for the next name candidate on the list
+                JToken nextName = secondaryName.First();
+                secondaryName.RemoveAt(0);
+                PopulateName(ref person, nextName, secondaryName.Count() > 0 ? secondaryName : null);
+            }
         }
     }
 }

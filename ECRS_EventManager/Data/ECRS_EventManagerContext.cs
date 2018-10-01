@@ -22,6 +22,8 @@ namespace ECRS_EventManager.Models
 
         public DbSet<EventManager.Models.Registration> Registration { get; set; }
 
+        public DbSet<EventManager.Models.RegistrationEntry> RegistrationEntry { get; set; }
+
         public DbSet<EventManager.Models.Event> Event { get; set; }
 
         public DbSet<EventManager.Models.Person> Person { get; set; }
