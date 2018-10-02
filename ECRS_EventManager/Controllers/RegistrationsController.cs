@@ -394,11 +394,11 @@ namespace ECRS_EventManager.Controllers
             }
 
             thePerson.UpdatedOn = DateTime.Now;
-            thePerson.Phone = attendee["Phone"] == null && attendee["Phone"].Value<string>() != String.Empty 
+            thePerson.Phone = attendee["Phone"] == null || attendee["Phone"].Value<string>() != String.Empty 
                                 ? thePerson.Phone : attendee["Phone"].Value<string>();
-            thePerson.Gender = attendee["Gender"] == null && attendee["Gender"].Value<string>() != String.Empty
+            thePerson.Gender = attendee["Gender"] == null || attendee["Gender"].Value<string>() != String.Empty
                                 ? thePerson.Gender : attendee["Gender"].Value<string>();
-            thePerson.Email = attendee["Email"] == null && attendee["Email"].Value<string>() != String.Empty
+            thePerson.Email = attendee["Email"] == null || attendee["Email"].Value<string>() != String.Empty
                                 ? thePerson.Email : attendee["Email"].Value<string>();
 
             if(address != null)

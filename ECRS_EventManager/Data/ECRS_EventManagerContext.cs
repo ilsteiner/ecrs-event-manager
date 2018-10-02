@@ -29,5 +29,9 @@ namespace ECRS_EventManager.Models
         public DbSet<EventManager.Models.Person> Person { get; set; }
 
         public DbSet<EventManager.Models.Address> Address { get; set; }
+
+        public DbSet<EventManager.Models.EventClass> EventClass { get; set; }
+
+        public DbSet<EventManager.Models.ClassPriority> ClassPriority { get; set; }
     }
 }

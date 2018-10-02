@@ -21,5 +21,7 @@ namespace EventManager.Models
 
         [Required]
         public Person Person { get; set; }
+
+        public List<ClassPriority> ClassPriorities { get; set; }
     }
 }
